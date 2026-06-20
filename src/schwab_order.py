@@ -16,15 +16,20 @@ class Order(BaseModel):
     qty: int  # Backup if not using 'amount'
     repeat: int = 1
 
+client = auth.easy_client(api_key=CLIENT_ID, app_secret=CLIENT_SECRET, callback_url=REDIRECT_URI,
+                                  token_path=TOKEN_PATH, interactive=False)
 
 # Schwab Config
-
+def get_account_balance():
+    account_hash = client.get_account_numbers().json()[0]['hashValue']
+    response = client.get_account(account_hash)
+    return response.json()
 
 def place_schwab_order(order: Order):
     try:
         # Initialize Client
-        client = auth.easy_client(api_key=CLIENT_ID, app_secret=CLIENT_SECRET, callback_url=REDIRECT_URI,
-                                  token_path=TOKEN_PATH, interactive=False)
+        # client = auth.easy_client(api_key=CLIENT_ID, app_secret=CLIENT_SECRET, callback_url=REDIRECT_URI,
+        #                           token_path=TOKEN_PATH, interactive=False)
 
         if order.symbol is None:
             return {"error": "Could not fetch price"}
@@ -33,6 +38,7 @@ def place_schwab_order(order: Order):
             while r < order.repeat:
                 logger.info(f"Place Order: {order} - Order Number {r + 1}")
                 execute_schwab_order(order, client)
+                r+=1
             return {"msg": "Order placed successfully"}
     except Exception as e:
         logger.error(e)
@@ -78,4 +84,7 @@ def place_buy_trigger_sell(symbol, qty, buy_price, sell_price, client):
     # Get Account Hash and Place the composite order
     account_hash = client.get_account_numbers().json()[0]['hashValue']
     response = client.place_order(account_hash, fts_order.build())
+    client.get_price_history()
+    client.get_quotes()
+
     logger.info(response)

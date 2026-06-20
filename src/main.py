@@ -13,7 +13,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from src import logger, TOKEN_PATH
-from src.schwab_order import Order, place_schwab_order
+from src.schwab_order import Order, place_schwab_order, get_account_balance
 
 # Redirect Uvicorn logs to use the same handlers
 uvicorn_logger = logging.getLogger("uvicorn")
@@ -114,6 +114,15 @@ async def custom_swagger_ui_html():
 def read_root():
     return RedirectResponse(url="/docs")
 
+# ---------------- Place Order ----------------
+@app.post("/account_balance", status_code=202)
+async def account_balance():
+    # This will now work!
+    account = get_account_balance()
+    current_balance = account.get("balance")
+    account_id = account.get("securitiesAccount").get("accountNumber")
+
+    return {"status": "Authorized", "id": account_id, "balance": current_balance}
 
 # ---------------- Place Order ----------------
 @app.post("/place_two_leg_order", tags=["Schwab Order"])
